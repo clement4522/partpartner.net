@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>parT</title>
+<style>
+  :root { color-scheme: dark; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: #1a1a2e; color: #ffffff; text-align: center;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 24px;
+  }
+  main { max-width: 340px; }
+  h1 { font-size: 44px; margin: 0 0 8px; letter-spacing: -1px; }
+  p { font-size: 16px; line-height: 1.5; color: #c9c9d4; margin: 0 0 24px; }
+  .btn {
+    display: block; padding: 16px 24px; border-radius: 14px;
+    background: #e94560; color: #ffffff; font-size: 17px; font-weight: 600;
+    text-decoration: none;
+  }
+  .legal { display: inline-block; margin-top: 40px; font-size: 13px; color: #c9c9d4; }
+</style>
+</head>
+<body>
+<main>
+  <h1>parT</h1>
+  <p id="tagline">Trouve et organise des soir&eacute;es pr&egrave;s de chez toi.</p>
+  <a id="open" class="btn" href="part:///">Ouvrir parT</a>
+  <a id="privacy" class="legal" href="#" hidden>Politique de confidentialit&eacute;</a>
+</main>
+<script>
+(function () {
+  // Store pages. "Ouvrir parT" opens the app; when it is not on the phone, it goes to the store.
+  // iOS: https://apps.apple.com/fr/app/parT/id<number>, the number is given by App Store Connect
+  // once the app is created (until then an iPhone without the app gets nothing).
+  var STORE_IOS = '';
+  var STORE_ANDROID = 'https://play.google.com/store/apps/details?id=net.partpartner.app';
+
+  // Address of the privacy policy page. Left empty, the link is not shown.
+  var PRIVACY_URL = '';
+  if (PRIVACY_URL) {
+    var p = document.getElementById('privacy');
+    p.setAttribute('href', PRIVACY_URL);
+    p.hidden = false;
+  }
+
+  var params = new URLSearchParams(window.location.search);
+  var id = params.get('id') || '';
+  var ok = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  var ua = navigator.userAgent;
+  var isAndroid = /android/i.test(ua);
+  var isIos = /iphone|ipad|ipod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+
+  // The store of this phone (Google Play anywhere but on an iPhone / iPad).
+  var store = isIos ? STORE_IOS : STORE_ANDROID;
+
+  var deep = ok ? 'part:///p/' + id : 'part:///';
+  var intent = 'intent://' + (ok ? 'p/' + id : '') + '#Intent;scheme=part;package=net.partpartner.app;' +
+    (STORE_ANDROID ? 'S.browser_fallback_url=' + encodeURIComponent(STORE_ANDROID) + ';' : '') + 'end';
+  var target = isAndroid ? intent : deep;
+
+  var button = document.getElementById('open');
+  button.setAttribute('href', target);
+  // A shared party link says so; the bare address is the presentation page of the app.
+  if (ok) document.getElementById('tagline').textContent = "Cette soir\u00e9e t'attend dans l'application.";
+
+  // Opening the app hides this page. If the page is still shown a moment after the tap, the app
+  // is not installed (or the browser refused to open it): go to the store.
+  button.addEventListener('click', function (e) {
+    e.preventDefault();
+    var left = false;
+    function leave() { left = true; }
+    document.addEventListener('visibilitychange', function () { if (document.hidden) leave(); });
+    window.addEventListener('pagehide', leave);
+    window.addEventListener('blur', leave);
+
+    window.location.href = target;
+
+    if (!store) return;
+    setTimeout(function () {
+      if (!left && !document.hidden) window.location.href = store;
+    }, 1800);
+  });
+})();
+</script>
+</body>
+</html>
